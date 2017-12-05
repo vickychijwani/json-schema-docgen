@@ -1,0 +1,37 @@
+<!doctype HTML>
+<html>
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <script src="./esprima.min.js"></script>
+    <script src="./ref-parser.min.js"></script>
+    <!--<script src="./js-schema.min.js"></script>-->
+    <!--<script src="./estraverse.js"></script>-->
+    <script src="./test.js"></script>
+    <script src="./prism.js"></script>
+
+    <link rel="stylesheet" href="./prism.css" />
+</head>
+
+<body>
+    <div id="example" style="float: left; margin: 20px"></div>
+    <div id="doc" style="float: left; margin-left: 20px; width: 200px">DOC</div>
+
+    <script type="text/javascript">
+        Promise.all([
+            // $RefParser.dereference('./package-json-doc.json'),
+            // fetch('./package-json-example.json')
+            $RefParser.dereference('./pipeline-schema.json'),
+            fetch('./pipeline-example.json')
+        ])
+            .then(([schema, example]) => Promise.all([schema, example.text()]))
+            .then(([schema, example]) => jsonDocgen.render({
+                exampleContainer: document.querySelector('#example'),
+                docContainer: document.querySelector('#doc'),
+                example,
+                schema
+            }));
+    </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "PipelineArchitecture",
+  "definitions": {
+    "task": {
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Task ID. Must be unique."
+        },
+        "entrypoint": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/definitions/wget_source"
+              },
+              {
+                "$ref": "#/definitions/gerrit_source"
+              }
+            ]
+          }
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "outputs": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "entrypoint"
+      ]
+    },
+    "filter_task": {
+      "properties": {
+        "entrypoint": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/definitions/wget_source"
+              },
+              {
+                "$ref": "#/definitions/gerrit_source"
+              }
+            ]
+          }
+        },
+        "inputs": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "entrypoint"
+      ]
+    },
+    "wget_source": {
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "wget"
+          ]
+        },
+        "url": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "url",
+        "output"
+      ]
+    },
+    "gerrit_source": {
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "gerrit"
+          ]
+        },
+        "gerrit_project": {
+          "type": "string"
+        },
+        "gerrit_refspec": {
+          "type": "string"
+        },
+        "output_dir": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "gerrit_project",
+        "gerrit_refspec",
+        "output_dir"
+      ]
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "The version of the pipeline schema being used."
+    },
+    "stages": {
+      "title": "PipelineStage",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stage ID. Must be unique."
+          },
+          "node_type": {
+            "type": "string"
+          },
+          "failure_strategy": {
+            "type": "string",
+            "enum": [
+              "exit_on_fail",
+              "continue_on_fail"
+            ]
+          },
+          "tasks": {
+            "type": "array",
+            "description": "An array of tasks.",
+            "items": {
+              "$ref": "#/definitions/task"
+            }
+          },
+          "dynamic_task_filter": {
+            "$ref": "#/definitions/filter_task"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/wget_source"
+                },
+                {
+                  "$ref": "#/definitions/gerrit_source"
+                }
+              ]
+            }
+          },
+          "inputs": {
+            "type": "object"
+          },
+          "outputs": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "stages"
+  ]
+}
