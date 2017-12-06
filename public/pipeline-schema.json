@@ -9,7 +9,8 @@
           "description": "Task ID. Must be unique."
         },
         "entrypoint": {
-          "type": "string"
+          "type": "string",
+          "description": "Command to run. Executed relative to ..."
         },
         "sources": {
           "type": "array",
@@ -46,7 +47,6 @@
         "sources": {
           "type": "array",
           "items": {
-            "type": "object",
             "oneOf": [
               {
                 "$ref": "#/definitions/wget_source"
@@ -67,6 +67,8 @@
       ]
     },
     "wget_source": {
+      "type": "object",
+      "description": "A source for files to be retrived over HTTP.",
       "properties": {
         "source": {
           "type": "string",
@@ -75,10 +77,12 @@
           ]
         },
         "url": {
-          "type": "string"
+          "type": "string",
+          "description": "The URL to fetch."
         },
         "output": {
-          "type": "string"
+          "type": "string",
+          "description": "Where to store the fetched file."
         }
       },
       "additionalProperties": false,
@@ -97,13 +101,16 @@
           ]
         },
         "gerrit_project": {
-          "type": "string"
+          "type": "string",
+          "description": "Which Gerrit project to clone."
         },
         "gerrit_refspec": {
-          "type": "string"
+          "type": "string",
+          "description": "Which refspec (e.g., refs/changes/88/97988/1) to clone."
         },
         "output_dir": {
-          "type": "string"
+          "type": "string",
+          "description": "Where to store the cloned repo."
         }
       },
       "additionalProperties": false,

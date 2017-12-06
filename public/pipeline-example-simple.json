@@ -1,0 +1,11 @@
+{
+  "schema_version": "0.2",
+  "stages": [{
+    "id": "stage1",
+    "node_type": "medium",
+    "tasks": [{
+      "id": "task1",
+      "entrypoint": "premake --build-all"
+    }]
+  }]
+}

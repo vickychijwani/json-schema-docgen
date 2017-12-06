@@ -61,9 +61,11 @@ jsonDocgen = (function () {
             traverse(ast, {
                 post: function (node, maxColumn, path) {
                     if (node.type === 'Property') {
+                        console.group(pathToJsonPointer(path));
                         var schemaItem = jsonSchemaLookup(schema, path);
+                        console.groupEnd();
                         if (! schemaItem) return;
-                        var requiredProps = jsonSchemaLookup(schema, path.slice(0, path.length-2).concat(["required"]));
+                        var requiredProps = objLookup(schema, path.slice(0, path.length-2).concat(["required"]));
                         var isRequired = requiredProps ? (requiredProps.indexOf(node.key.value) !== -1) : false;
                         var $nodeOverlay = document.createElement('div');
                         $nodeOverlay.classList.add('node-overlay');
@@ -85,10 +87,74 @@ jsonDocgen = (function () {
         }
     };
 
-    function jsonSchemaLookup(schema, path) {
+    // given a schema and a candidate path, figure out an equivalent path that actually exists in the schema, if any
+    function jsonSchemaLookup(schema, inputPath) {
+        var candidatePaths = [[]];
+        var candidateValues = [schema];
+        inputPath.forEach(function (pathPart) {
+            var indicesToDelete = [];
+            var newPaths = [];
+            var newValues = [];
+            candidatePaths.forEach(function (_, idx) {
+                candidatePaths[idx].push(pathPart);
+                if (!candidateValues[idx]) {
+                    indicesToDelete.push(idx);
+                } else if (candidateValues[idx][pathPart]) {
+                    candidateValues[idx] = candidateValues[idx][pathPart];
+                } else if (candidateValues[idx]['oneOf'] && candidateValues[idx]['oneOf'].length > 0) {
+                    var oneOfItems = candidateValues[idx]['oneOf'];
+                    if (candidateValues[idx]['oneOf'][0][pathPart]) {
+                        candidatePaths[idx].pop();
+                        candidatePaths[idx].concat('oneOf');
+                        candidatePaths[idx].push(0);
+                        candidatePaths[idx].push(pathPart);
+                        candidateValues[idx] = oneOfItems[0][pathPart];
+                    } else {
+                        indicesToDelete.push(idx);
+                    }
+                    oneOfItems.forEach(function (oneOfItem, oneOfIdx) {
+                        if (oneOfIdx === 0) return; // we've already processed index 0
+                        if (oneOfItem[pathPart]) {
+                            var p = candidatePaths[idx].slice();
+                            p[p.length-2] = oneOfIdx;
+                            newPaths.push(p);
+                            newValues.push(oneOfItem[pathPart]);
+                        } else {
+                            // no need to add to indicesToDelete, as this path is a new one, so just don't add it
+                        }
+                    })
+                } else {
+                    indicesToDelete.push(idx);
+                }
+            });
+            console.log(pathPart, JSON.stringify(candidatePaths.map(pathToJsonPointer)));
+            // delete "dead-end" (i.e., unresolveable) paths
+            indicesToDelete
+                // reverse sort, so higher indices are deleted first
+                .sort(function (a, b) { return -(a-b) })
+                .forEach(function (idx) {
+                    candidatePaths.splice(idx, 1);
+                    candidateValues.splice(idx, 1);
+                });
+            // add new paths and values
+            candidatePaths = candidatePaths.concat(newPaths);
+            candidateValues = candidateValues.concat(newValues);
+        });
+        if (candidatePaths.length > 1) {
+            throw new Error('Ambiguous path in example #/' + inputPath.join('/'));
+        }
+        return candidateValues.length === 1 ? candidateValues[0] : null;
+    }
+
+    function objLookup(obj, path) {
+        // lookup the given path in the given object, and return its value if it exists, else return null
         return path.reduce(function (value, pathPart) {
-            return (value ? value[pathPart] : null);
-        }, schema);
+            return ((value !== null && typeof value !== 'undefined') ? value[pathPart] : null);
+        }, obj);
+    }
+
+    function pathToJsonPointer(path) {
+        return '#/' + path.join('/');
     }
 
     // adapted from https://github.com/olov/ast-traverse/blob/master/ast-traverse.js

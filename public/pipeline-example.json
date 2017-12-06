@@ -1,11 +1,88 @@
 {
-  "schema_version": "0.2",
-  "stages": [{
-    "id": "stage1",
-    "node_type": "medium",
-    "tasks": [{
-      "id": "task1",
-      "entrypoint": "premake --build-all"
-    }]
-  }]
+    "schema_version": "0.2",
+    "stages": [
+        {
+            "id": "variants-stage",
+            "node_type": "small",
+            "failure_strategy" : "continue_on_fail",
+            "sources": [
+                    {
+                        "source": "wget",
+                        "url": "sduddulinux.gurg-off:51376/start_script.sh",
+                        "output": "./start_script.sh"
+                    },
+                    {
+                        "source": "gerrit",
+                        "gerrit_project": "regression_poc",
+                        "gerrit_refspec": "refs/changes/50/114550/35",
+                        "output_dir": "regression_poc"
+                    }
+            ],
+            "tasks": [
+                {
+                    "id": "A-variant",
+                    "entrypoint": "start_script.sh",
+                    "outputs": {
+                        "result": "result.txt",
+                        "config_files": "random_directory/*.yml",
+                        "non_existent_file" : "non/existent/file.txt"
+                    }
+                },
+                {
+                    "id": "B-variant",
+                    "sources": [
+                            {
+                                "source": "wget",
+                                "url": "sduddulinux.gurg-off:51376/fail_script.sh",
+                                "output": "./fail_script.sh"
+                            }
+                    ],
+                    "entrypoint": "fail_script.sh",
+                    "outputs": {
+                        "result": "result.txt"
+                    }
+                }
+            ]
+        },
+
+        {
+            "id": "aggregation-stage",
+            "node_type": "medium",
+            "dynamic_task_filter":
+                {
+                    "entrypoint": "filter.sh",
+                    "sources": [
+                            {
+                                "source": "wget",
+                                "url": "sduddulinux.gurg-off:51376/start_script.sh",
+                                "output": "./filter.sh"
+                            }
+                    ],
+                    "inputs": {
+                        "variants-stage.A-variant.result": "somedir/a-result"
+                    }
+                },
+            "tasks": [
+                {
+                    "id": "reconcile-results",
+                    "entrypoint": "start_script.sh",
+                    "sources": [
+                            {
+                                "source": "wget",
+                                "url": "sduddulinux.gurg-off:51376/start_script.sh",
+                                "output": "./start_script.sh"
+                            }
+                    ],
+                    "inputs": {
+                        "variants-stage.A-variant.config_files": "./",
+                        "variants-stage.A-variant.non_existent_file" : "non/existent/file.txt",
+
+                        "variants-stage.A-variant.result": "results/a-result",
+                        "variants-stage.B-variant.result": "results/b-result"
+                    }
+                }
+            ]
+        }
+
+    ]
 }
